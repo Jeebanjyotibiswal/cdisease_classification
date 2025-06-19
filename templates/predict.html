@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Disease Classifier | Pragsys AI</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #f5f7fa;
+    }
+    .symptom-card {
+      border: 2px solid #ddd;
+      border-radius: 20px;
+      padding: 12px;
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.2s, background-color 0.2s;
+    }
+    .symptom-card:hover {
+      transform: scale(1.05);
+      border-color: #5e72e4;
+    }
+    .symptom-card.selected {
+      background-color: #5e72e4;
+      color: white;
+      border-color: #324cdd;
+    }
+    .search-box {
+      margin: 30px 0 20px;
+    }
+    .patient-info {
+      background-color: #f8f9fa;
+      border-radius: 15px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .site-footer {
+      background-color: #4e73df;
+      color: #ffffff;
+      padding: 20px 0;
+      text-align: center;
+      margin-top: 50px;
+      border-top-left-radius: 20px;
+      border-top-right-radius: 20px;
+    }
+    .footer-content {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 30px;
+      font-size: 1rem;
+    }
+    .footer-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .footer-item i {
+      color: #ffffff;
+      font-size: 1.1rem;
+    }
+  </style>
+</head>
+<body>
+<div class="container my-5">
+  <div class="text-center mb-4">
+    <h2><i class="fas fa-heartbeat text-danger"></i> AI Disease Classifier</h2>
+    <p>Select your symptoms and get AI-powered health insights.</p>
+  </div>
+
+  <form method="POST" action="/result">
+    <!-- Patient Information Section -->
+    <div class="patient-info">
+      <h4><i class="fas fa-user-circle"></i> Personal Information</h4>
+      <div class="row g-3 mt-2">
+        <div class="col-md-4">
+          <label for="name" class="form-label">Full Name</label>
+          <input type="text" class="form-control" id="name" name="name" required>
+        </div>
+        <div class="col-md-4">
+          <label for="age" class="form-label">Age</label>
+          <input type="number" class="form-control" id="age" name="age" required min="1" max="120">
+        </div>
+        <div class="col-md-4">
+          <label for="blood_group" class="form-label">Blood Group</label>
+          <select class="form-select" id="blood_group" name="blood_group" required>
+            <option value="">Select</option>
+            <option value="A+">A+</option>
+            <option value="A-">A-</option>
+            <option value="B+">B+</option>
+            <option value="B-">B-</option>
+            <option value="AB+">AB+</option>
+            <option value="AB-">AB-</option>
+            <option value="O+">O+</option>
+            <option value="O-">O-</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Symptoms Section -->
+    <h4 class="mt-4"><i class="fas fa-notes-medical"></i> Select Symptoms</h4>
+    <div class="row g-3">
+      {% for symptom in visible_symptoms %}
+      <div class="col-md-4 col-sm-6">
+        <div class="symptom-card" onclick="toggleSymptom('{{ symptom }}')" id="card-{{ symptom }}">
+          <input type="checkbox" name="symptoms" value="{{ symptom }}" id="{{ symptom }}" style="display:none;">
+          <i class="fas fa-stethoscope text-primary"></i>
+          <br>
+          {{ symptom.replace('_', ' ').title() }}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Searchable Dropdown -->
+    <div class="search-box">
+      <label class="form-label mt-4"><strong>Search and Add More Symptoms</strong></label>
+      <input class="form-control mb-2" list="symptomList" id="symptomSearch" placeholder="Search symptom...">
+      <datalist id="symptomList">
+        {% for symptom in other_symptoms %}
+        <option value="{{ symptom.replace('_', ' ').title() }}">
+        {% endfor %}
+      </datalist>
+      <button type="button" class="btn btn-success mt-2" onclick="addSymptom()">Add Symptom</button>
+    </div>
+
+    <!-- Added Symptoms List -->
+    <div id="addedSymptoms" class="row g-2 mt-3"></div>
+
+    <div class="text-center mt-4">
+      <button type="submit" class="btn btn-primary btn-lg">Predict Disease</button>
+    </div>
+  </form>
+</div>
+<footer class="site-footer">
+  <div class="footer-content">
+    <div class="footer-item">
+      <i class="fas fa-info-circle"></i> About
+    </div>
+    <div class="footer-item">
+      <i class="fas fa-phone-alt"></i> 6370431049
+    </div>
+    <div class="footer-item">
+      <i class="fas fa-envelope"></i> jeebanjyotibiswal766@gmail.com
+    </div>
+  </div>
+</footer>
+
+<script>
+  function toggleSymptom(symptom) {
+    const card = document.getElementById(`card-${symptom}`);
+    const checkbox = document.getElementById(symptom);
+    card.classList.toggle('selected');
+    checkbox.checked = !checkbox.checked;
+  }
+
+  function addSymptom() {
+    const input = document.getElementById('symptomSearch');
+    const value = input.value.trim();
+    if (value) {
+      const idValue = value.toLowerCase().replace(/ /g, '_');
+
+      if (document.getElementById(idValue)) {
+        alert('Symptom already added!');
+        input.value = '';
+        return;
+      }
+
+      const div = document.createElement('div');
+      div.className = 'col-md-4 col-sm-6';
+      div.innerHTML = `
+        <div class="symptom-card selected" onclick="toggleSymptom('${idValue}')" id="card-${idValue}">
+          <input type="checkbox" name="symptoms" value="${idValue}" id="${idValue}" style="display:none;" checked>
+          <i class="fas fa-stethoscope text-primary"></i>
+          <br>${value}
+        </div>
+      `;
+      document.getElementById('addedSymptoms').appendChild(div);
+      input.value = '';
+    }
+  }
+</script>
+
+</body>
+</html>
